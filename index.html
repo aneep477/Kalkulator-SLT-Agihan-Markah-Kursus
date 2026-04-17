@@ -1,189 +1,66 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kalkulator MK - Backend Interface</title>
   <style>
-    :root {
-      --primary-color: #1a73e8;
-      --error-color: #d93025;
-      --success-color: #188038;
-      --bg-color: #f8f9fa;
-    }
-    
-    body {
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .card {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 450px;
-      text-align: center;
-    }
-
-    h2 {
-      color: var(--primary-color);
-      margin-bottom: 10px;
-      font-size: 22px;
-    }
-
-    p {
-      color: #5f6368;
-      font-size: 14px;
-      margin-bottom: 25px;
-    }
-
-    .upload-zone {
-      border: 2px dashed #dadce0;
-      padding: 30px 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .upload-zone:hover {
-      background-color: #f1f3f4;
-      border-color: var(--primary-color);
-    }
-
-    input[type="file"] {
-      display: block;
-      width: 100%;
-      margin-bottom: 15px;
-    }
-
-    button {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      transition: background 0.2s;
-    }
-
-    button:hover {
-      background-color: #1557b0;
-    }
-
-    button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-
-    #status {
-      margin-top: 20px;
-      font-size: 14px;
-      font-weight: 500;
-      min-height: 20px;
-    }
-
-    .loader {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid var(--primary-color);
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      animation: spin 1s linear infinite;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 10px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+    body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding-top: 50px; background: #f0f2f5; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; }
+    h2 { color: #1a73e8; margin-bottom: 20px; text-align: center; }
+    .upload-box { border: 2px dashed #dadce0; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
+    button { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; cursor: pointer; font-size: 16px; font-weight: bold; }
+    button:disabled { background: #ccc; }
+    #msg { margin-top: 15px; text-align: center; font-size: 14px; }
   </style>
 </head>
 <body>
-
   <div class="card">
-    <h2>📂 Import Maklumat Kursus</h2>
-    <p>Muat naik fail <b>Table 4 (.xlsx)</b> untuk pengiraan SLT automatik.</p>
-    
-    <form id="uploadForm">
-      <div class="upload-zone">
-        <input type="file" name="myFile" id="fileField" accept=".xlsx">
-      </div>
-      <button type="button" id="submitBtn">MUAT NAIK & PROSES</button>
-    </form>
-    
-    <div id="status"></div>
+    <h2>Kalkulator MK API</h2>
+    <div class="upload-box">
+      <input type="file" id="fileInp" accept=".xlsx">
+    </div>
+    <button id="btn" onclick="hantarFail()">MUAT NAIK & PROSES</button>
+    <div id="msg"></div>
   </div>
 
   <script>
-    // URL API Google Apps Script anda
     const API_URL = "https://script.google.com/macros/s/AKfycbwc70zwZQa-DC_BWKTec28EIGT1BbBPncECU6LVt8QGxAE2aYM_t6nON6mljo6eZ45_/exec";
 
-    document.getElementById('submitBtn').addEventListener('click', function() {
-      const fileInput = document.getElementById('fileField');
-      const status = document.getElementById('status');
-      const btn = document.getElementById('submitBtn');
-      
-      if (!fileInput.files[0]) {
-        status.innerHTML = "<span style='color:var(--error-color)'>Sila pilih fail dahulu!</span>";
+    function hantarFail() {
+      const fileInp = document.getElementById('fileInp');
+      const msg = document.getElementById('msg');
+      const btn = document.getElementById('btn');
+
+      if (!fileInp.files[0]) {
+        msg.innerHTML = "<span style='color:red'>Sila pilih fail .xlsx!</span>";
         return;
       }
 
-      // Sediakan data untuk dihantar
-      const file = fileInput.files[0];
+      btn.disabled = true;
+      msg.innerHTML = "⏳ Memproses di Backend API...";
+      
+      const file = fileInp.files[0];
       const reader = new FileReader();
 
-      // Maklum balas visual kepada pengguna
-      btn.disabled = true;
-      status.innerHTML = '<div class="loader"></div> Sedang memproses... Sila tunggu.';
-      status.style.color = "orange";
-
       reader.onload = function(e) {
-        const base64Data = e.target.result.split(',')[1];
+        const base64 = e.target.result.split(',')[1];
         
-        // Hantar data ke Google Apps Script via POST (Web App)
         fetch(API_URL, {
           method: 'POST',
+          mode: 'no-cors', // Penting untuk mengelakkan ralat CORS pada Web App
           body: JSON.stringify({
-            data: base64Data,
+            data: base64,
             filename: file.name,
             mimetype: file.type
           })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if(data.result === "success" || data.status === "Berjaya") {
-            status.innerHTML = "✅ Berjaya! Data telah diekstrak ke Google Sheet.";
-            status.style.color = "var(--success-color)";
-          } else {
-            status.innerHTML = "❌ Ralat: " + (data.error || "Gagal memproses fail.");
-            status.style.color = "var(--error-color)";
-            btn.disabled = false;
-          }
-        })
-        .catch(err => {
-          status.innerHTML = "❌ Ralat sambungan API.";
-          status.style.color = "var(--error-color)";
+        }).then(() => {
+          msg.innerHTML = "<span style='color:green'>✅ Selesai! Sila semak Google Sheet anda.</span>";
           btn.disabled = false;
-          console.error(err);
+        }).catch(err => {
+          msg.innerHTML = "<span style='color:red'>Ralat sambungan API.</span>";
+          btn.disabled = false;
         });
       };
-
       reader.readAsDataURL(file);
-    });
+    }
   </script>
-
 </body>
 </html>
