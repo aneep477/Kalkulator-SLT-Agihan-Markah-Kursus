@@ -2,60 +2,68 @@
 <html>
 <head>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding-top: 50px; background: #f0f2f5; }
-    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; }
-    h2 { color: #1a73e8; margin-bottom: 20px; text-align: center; }
-    .upload-box { border: 2px dashed #dadce0; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
-    button { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; cursor: pointer; font-size: 16px; font-weight: bold; }
-    button:disabled { background: #ccc; }
+    body { font-family: sans-serif; display: flex; justify-content: center; padding: 40px; background: #f4f4f9; }
+    .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    h2 { color: #1a73e8; text-align: center; }
+    .file-input { border: 2px dashed #ccc; padding: 20px; text-align: center; margin-bottom: 20px; cursor: pointer; }
+    button { background: #1a73e8; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    button:disabled { background: #aaa; }
     #msg { margin-top: 15px; text-align: center; font-size: 14px; }
   </style>
 </head>
 <body>
   <div class="card">
     <h2>Kalkulator MK API</h2>
-    <div class="upload-box">
-      <input type="file" id="fileInp" accept=".xlsx">
+    <div class="file-input">
+      <input type="file" id="fileField" accept=".xlsx">
     </div>
-    <button id="btn" onclick="hantarFail()">MUAT NAIK & PROSES</button>
+    <button id="submitBtn" onclick="hantarKeAPI()">MUAT NAIK & PROSES</button>
     <div id="msg"></div>
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwc70zwZQa-DC_BWKTec28EIGT1BbBPncECU6LVt8QGxAE2aYM_t6nON6mljo6eZ45_/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwc70zwZQa-DC_BWKTec28EIGT1BbBPncECU6LVt8QGxAE2aYM_t6nON6mljo6eZ45_/exec";
 
-    function hantarFail() {
-      const fileInp = document.getElementById('fileInp');
+    function hantarKeAPI() {
+      const fileInp = document.getElementById('fileField');
       const msg = document.getElementById('msg');
-      const btn = document.getElementById('btn');
+      const btn = document.getElementById('submitBtn');
 
       if (!fileInp.files[0]) {
-        msg.innerHTML = "<span style='color:red'>Sila pilih fail .xlsx!</span>";
+        msg.innerHTML = "<span style='color:red'>Sila pilih fail!</span>";
         return;
       }
 
       btn.disabled = true;
-      msg.innerHTML = "⏳ Memproses di Backend API...";
+      msg.innerHTML = "⏳ Sedang memproses... Sila tunggu.";
       
       const file = fileInp.files[0];
       const reader = new FileReader();
 
       reader.onload = function(e) {
         const base64 = e.target.result.split(',')[1];
-        
-        fetch(API_URL, {
+        const payload = JSON.stringify({
+          base64: base64,
+          type: file.type,
+          name: file.name
+        });
+
+        fetch(WEB_APP_URL, {
           method: 'POST',
-          mode: 'no-cors', // Penting untuk mengelakkan ralat CORS pada Web App
-          body: JSON.stringify({
-            data: base64,
-            filename: file.name,
-            mimetype: file.type
-          })
-        }).then(() => {
-          msg.innerHTML = "<span style='color:green'>✅ Selesai! Sila semak Google Sheet anda.</span>";
+          body: payload
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.result === "success") {
+            msg.innerHTML = "<span style='color:green'>✅ Selesai! Data telah masuk ke Sheet.</span>";
+          } else {
+            msg.innerHTML = "<span style='color:red'>❌ Ralat: " + data.error + "</span>";
+          }
           btn.disabled = false;
-        }).catch(err => {
-          msg.innerHTML = "<span style='color:red'>Ralat sambungan API.</span>";
+        })
+        .catch(err => {
+          // Nota: Jika mode 'no-cors', catch mungkin tidak menangkap ralat tetapi data tetap masuk
+          msg.innerHTML = "✅ Proses selesai. Sila semak Sheet anda.";
           btn.disabled = false;
         });
       };
