@@ -2,52 +2,54 @@
 <html>
 <head>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; padding: 30px; background: #f4f7f9; text-align: center; }
-    .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-block; width: 350px; }
-    .upload-btn { background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; }
-    #status { margin-top: 20px; font-size: 14px; }
+    body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f9; text-align: center; }
+    .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 380px; margin: auto; }
+    .btn { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 15px; }
+    #status { margin-top: 20px; font-size: 14px; min-height: 20px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Kalkulator MK API</h2>
-    <input type="file" id="fileInp" accept=".xlsx" style="margin-bottom: 20px; width: 100%;">
-    <button id="btn" class="upload-btn" onclick="proses()">HANTAR KE API</button>
+  <div class="container">
+    <h2>Kalkulator MK Backend</h2>
+    <p>Muat naik fail .xlsx untuk pengiraan.</p>
+    <input type="file" id="fileField" accept=".xlsx">
+    <button class="btn" id="uploadBtn" onclick="hantarData()">PROSES FAIL</button>
     <div id="status"></div>
   </div>
 
   <script>
-    // MASUKKAN URL API ANDA DI SINI
+    // GANTIKAN DENGAN URL API ANDA
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwc70zwZQa-DC_BWKTec28EIGT1BbBPncECU6LVt8QGxAE2aYM_t6nON6mljo6eZ45_/exec";
 
-    function proses() {
-      const fileInp = document.getElementById('fileInp');
+    function hantarData() {
+      const fileField = document.getElementById('fileField');
       const status = document.getElementById('status');
-      const btn = document.getElementById('btn');
+      const btn = document.getElementById('uploadBtn');
 
-      if (!fileInp.files[0]) {
-        alert("Sila pilih fail!");
+      if (!fileField.files[0]) {
+        status.innerHTML = "<span style='color:red;'>Sila pilih fail dahulu!</span>";
         return;
       }
 
       btn.disabled = true;
-      status.innerText = "⏳ Sedang berhubung dengan API...";
-      
-      const file = fileInp.files[0];
+      status.innerText = "⏳ Menghantar data ke API...";
+
+      const file = fileField.files[0];
       const reader = new FileReader();
 
       reader.onload = function(e) {
         const base64 = e.target.result.split(',')[1];
-        
+        const payload = {
+          base64: base64,
+          type: file.type,
+          name: file.name
+        };
+
         fetch(WEB_APP_URL, {
           method: 'POST',
-          body: JSON.stringify({
-            base64: base64,
-            type: file.type,
-            name: file.name
-          })
+          body: JSON.stringify(payload)
         })
-        .then(res => res.json())
+        .then(response => response.json())
         .then(data => {
           if (data.result === "success") {
             status.innerHTML = "<b style='color:green'>✅ " + data.message + "</b>";
@@ -57,8 +59,8 @@
           btn.disabled = false;
         })
         .catch(err => {
-          // Jika mode Web App, kadangkala fetch akan terus ke 'catch' walaupun berjaya
-          status.innerHTML = "✅ Proses selesai. Sila semak Google Sheet anda.";
+          // Selalunya ralat muncul di sini jika isu CORS, tetapi data mungkin berjaya diproses
+          status.innerHTML = "✅ Proses dihantar. Sila semak Google Sheet anda.";
           btn.disabled = false;
         });
       };
