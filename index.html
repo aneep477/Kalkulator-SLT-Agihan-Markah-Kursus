@@ -1,71 +1,32 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <style>
-    body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f9; text-align: center; }
-    .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 380px; margin: auto; }
-    .btn { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 15px; }
-    #status { margin-top: 20px; font-size: 14px; min-height: 20px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>Kalkulator MK Backend</h2>
-    <p>Muat naik fail .xlsx untuk pengiraan.</p>
-    <input type="file" id="fileField" accept=".xlsx">
-    <button class="btn" id="uploadBtn" onclick="hantarData()">PROSES FAIL</button>
-    <div id="status"></div>
-  </div>
+  <body>
+    <h3>Pilih Fail MK (.xlsx)</h3>
+    <input type="file" id="fail">
+    <button onclick="hantar()">PROSES</button>
+    <p id="status"></p>
 
-  <script>
-    // GANTIKAN DENGAN URL API ANDA
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwc70zwZQa-DC_BWKTec28EIGT1BbBPncECU6LVt8QGxAE2aYM_t6nON6mljo6eZ45_/exec";
-
-    function hantarData() {
-      const fileField = document.getElementById('fileField');
-      const status = document.getElementById('status');
-      const btn = document.getElementById('uploadBtn');
-
-      if (!fileField.files[0]) {
-        status.innerHTML = "<span style='color:red;'>Sila pilih fail dahulu!</span>";
-        return;
-      }
-
-      btn.disabled = true;
-      status.innerText = "⏳ Menghantar data ke API...";
-
-      const file = fileField.files[0];
-      const reader = new FileReader();
-
-      reader.onload = function(e) {
-        const base64 = e.target.result.split(',')[1];
-        const payload = {
-          base64: base64,
-          type: file.type,
-          name: file.name
+    <script>
+      function hantar() {
+        var failInput = document.getElementById('fail');
+        var status = document.getElementById('status');
+        
+        if (failInput.files.length == 0) return alert("Pilih fail!");
+        
+        status.innerText = "⏳ Memproses...";
+        var fail = failInput.files[0];
+        var pembaca = new FileReader();
+        
+        pembaca.onload = function(e) {
+          var base64 = e.target.result.split(',')[1];
+          
+          // Memanggil fungsi dengan parameter berasingan
+          google.script.run
+            .withSuccessHandler(res => status.innerText = res)
+            .mulaProses(base64, fail.name, fail.type);
         };
-
-        fetch(WEB_APP_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.result === "success") {
-            status.innerHTML = "<b style='color:green'>✅ " + data.message + "</b>";
-          } else {
-            status.innerHTML = "<b style='color:red'>❌ Ralat: " + data.error + "</b>";
-          }
-          btn.disabled = false;
-        })
-        .catch(err => {
-          // Selalunya ralat muncul di sini jika isu CORS, tetapi data mungkin berjaya diproses
-          status.innerHTML = "✅ Proses dihantar. Sila semak Google Sheet anda.";
-          btn.disabled = false;
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  </script>
-</body>
+        pembaca.readAsDataURL(fail);
+      }
+    </script>
+  </body>
 </html>
